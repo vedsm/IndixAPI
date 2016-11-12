@@ -14,6 +14,8 @@ var session      = require('express-session');
 
 var configDB = require('./config/database.js');
 
+var dataLocation = configDB.dataFolder;
+
 // configuration ===============================================================
 mongoose.connect(configDB.db); // connect to our database
 
@@ -34,15 +36,15 @@ app.all('*',function(req, res, next) {
 
 // set up our express application
 app.use(bodyParser()); // get information from html forms
-app.use(express.static(__dirname + '/app/views'));
+//app.use(express.static(__dirname + '/app/views'));
 app.set('view engine', 'ejs'); // set up ejs for templating
 
 //
 
 
 // routes ======================================================================
-/*require('./app/routes/login.js')(app); // load our routes and pass in our app and fully configured passport
-require('./app/routes/flockEvents.js')(app, request);
+require('./app/parser/populateDb.js')(dataLocation);
+/*require('./app/routes/flockEvents.js')(app, request);
 require('./app/routes/stocks.js')(app,mongoose);*/
 
 // launch ======================================================================
