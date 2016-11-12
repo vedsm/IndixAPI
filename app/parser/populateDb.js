@@ -34,8 +34,8 @@ module.exports = function (dataLocation) {
         if(index == dataArray.length){
             console.log("Done Reading file");
             fileIsRead(fileArray[fileIndex]);
-            if(fileIndex + 7 < fileArray.length){
-                parseFileAndPopulateDb(fileArray,fileIndex + 3);
+            if(fileIndex + 4 < fileArray.length){
+                parseFileAndPopulateDb(fileArray,fileIndex + 4);
             }
             return ;
         }
@@ -141,11 +141,12 @@ module.exports = function (dataLocation) {
                 //parseFileAndPopulateDb(dataLocation + '/' +files[i]) ;
                 console.log("adding file "+files[i]);
             }
-        for (var i = 0 ; i < 7 && i < fileArray.length ; i ++ ){
+        }
+        for (var i = 0 ; i < 4 && i < fileArray.length ; i ++ ){
             console.log("reading file "+fileArray[i]);
             parseFileAndPopulateDb(fileArray,i);
         }
-        }
+        
     };
 
 
@@ -157,8 +158,8 @@ module.exports = function (dataLocation) {
             if(err)console.error("error in detecting if the file was read",err);
             else if(response==true){
                 console.log("file "+fileName+" was already read");
-                if(fileIndex + 7 < fileArray.length){
-                parseFileAndPopulateDb(fileArray,fileIndex + 3);
+                if(fileIndex + 4 < fileArray.length){
+                parseFileAndPopulateDb(fileArray,fileIndex + 4);
                 }
             }
             else if(response==false){
