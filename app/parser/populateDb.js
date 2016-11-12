@@ -64,7 +64,8 @@ module.exports = function (dataLocation) {
         //var dataRowArray = dataArray.split(",");
         var dataRowArray = dataArray;
         var pid = dataRowArray[0];
-        Product.findOne({'pid': pid}, function (err, product) {
+        var seller = dataRowArray[5] ;
+        Product.findOne({$and:[{'pid': pid},{'seller':seller}]}, function (err, product) {
             if (err) console.error("ERROR :: ", err);
             else if (!product) {
                 console.log("no product found in db, creating new product");
@@ -75,24 +76,44 @@ module.exports = function (dataLocation) {
                 newProduct.categoryld = dataRowArray[3];
                 newProduct.storeld = dataRowArray[4];
                 newProduct.seller = dataRowArray[5];
-                newProduct.timestamp = dataRowArray[6];
-                newProduct.price = dataRowArray[7];
+                if(dataRowArray[6] == ""){
+                    newProduct.timestamp = -1
+                }
+                else{
+                newProduct.timestamp = Number(dataRowArray[6]) ; 
+                }
+                if(dataRowArray[7] == ""){
+                    newProduct.price = -1
+                }
+                else{
+                newProduct.price = Number(dataRowArray[7]); 
+                }
+            
                 newProduct.save(function (err) {if (err)console.error(err);});
             }
             else {
                 console.log("product found in db");
-                if(product.title==""      && dataRowArray[1]!="")product.title = dataRowArray[1];
-                if(product.upcs==""       && dataRowArray[2]!="")product.upcs = dataRowArray[2];
-                if(product.categoryld=="" && dataRowArray[3]!="")product.categoryld = dataRowArray[3];
-                if(product.storeld==""    && dataRowArray[4]!="")product.storeld = dataRowArray[4];
-                if(product.seller==""     && dataRowArray[5]!="")product.seller = dataRowArray[5];
-                if(product.timestamp==""  && dataRowArray[6]!="")product.timestamp = dataRowArray[6];
-                if(product.price==""      && dataRowArray[7]!="")product.price = dataRowArray[7];
-
-                if(Number(product.timestamp)<Number(dataRowArray[6])){
-                    product.timestamp = dataRowArray[6];
-                    product.price     = dataRowArray[7];
+                console.log("If timestamp is greater ");
+                if(product.timestamp < Number(dataArray[6])){
+                    if(dataRowArray[1] != ""){
+                        product.title = dataRowArray[1];
+                    }
+                    if(dataRowArray[2]!="")product.upcs = dataRowArray[2];
+                    if(dataRowArray[3]!="")product.categoryld = dataRowArray[3];
+                    if(dataRowArray[4]!="")product.storeld = dataRowArray[4];
+                    if( dataRowArray[6]!="")product.timestamp = Number(dataRowArray[6]);
+                    if(dataRowArray[7]!="")product.price = Number(dataRowArray[7]);
                 }
+                else{
+                    console.log("timestamp is less than the exisiting timestamp");
+                    if(product.title==""      && dataRowArray[1]!="")product.title = dataRowArray[1];
+                    if(product.upcs==""       && dataRowArray[2]!="")product.upcs = dataRowArray[2];
+                    if(product.categoryld=="" && dataRowArray[3]!="")product.categoryld = dataRowArray[3];
+                    if(product.storeld==""    && dataRowArray[4]!="")product.storeld = dataRowArray[4] ;
+
+                }
+
+
                 product.save(function (err) {if (err)console.error(err);});
             }
         });
