@@ -13,12 +13,13 @@ module.exports = function (dataLocation) {
         fs.exists(fileName, function (exists) {
             if(exists)
             {
-                callback();
+                callback(null);
             }else
             {
                 fs.writeFile(fileName, "", function (err, data)
                 {
-                    callback();
+                    if(err)callback(err);
+                    else callback(null);
                 })
             }
         });
@@ -60,7 +61,8 @@ module.exports = function (dataLocation) {
 
     function  addRowToDb(dataArray) {
         //console.log("adding row to db->",dataArray);
-        var dataRowArray = dataArray.split(",");
+        //var dataRowArray = dataArray.split(",");
+        var dataRowArray = dataArray;
         var pid = dataRowArray[0];
         Product.findOne({'pid': pid}, function (err, product) {
             if (err) console.error("ERROR :: ", err);
@@ -96,30 +98,143 @@ module.exports = function (dataLocation) {
         });
     }
 
-
-    function parseFileAndPopulateDb(fileName){
-        //TODO:?check if filename exists in the "readFile"
-
-        //read file and add to db
-        fs.readFile(dataLocation + fileName, 'utf8', function(err, data) {
-            if (err) {
-                console.error(err);
+    function addRowsToDb(dataArray,currIndex){
+        console.log("current row number->"+currIndex);
+        if(currIndex==dataArray.length) return;
+        var dataRowArray = dataArray[currIndex].split(",");
+        var pid = dataRowArray[0];
+        Product.findOne({'pid': pid}, function (err, product) {
+            if (err) console.error("ERROR :: ", err);
+            else if (!product) {
+                console.log("no product found in db, creating new product");
+                var newProduct = new Product();
+                newProduct.pid = pid;
+                newProduct.title = dataRowArray[1];
+                newProduct.upcs = dataRowArray[2];
+                newProduct.categoryld = dataRowArray[3];
+                newProduct.storeld = dataRowArray[4];
+                newProduct.seller = dataRowArray[5];
+                newProduct.timestamp = dataRowArray[6];
+                newProduct.price = dataRowArray[7];
+                newProduct.save(function (err) {
+                    if (err){console.error(err);}
+                    else addRowsToDb(dataArray,currIndex+1)
+                });
             }
-            console.log('parsing file: ' + fileName);
-            //console.log(data);
-            var dataArray=data.split("\n");
-            var dataArrayLength=dataArray.length;
-            console.log("file length->",dataArrayLength);
-            for(var i=1;i<dataArrayLength;i++){
-                addRowToDb(dataArray[i]);
+            else {
+                console.log("product found in db");
+                if(product.title==""      && dataRowArray[1]!="")product.title = dataRowArray[1];
+                if(product.upcs==""       && dataRowArray[2]!="")product.upcs = dataRowArray[2];
+                if(product.categoryld=="" && dataRowArray[3]!="")product.categoryld = dataRowArray[3];
+                if(product.storeld==""    && dataRowArray[4]!="")product.storeld = dataRowArray[4];
+                if(product.seller==""     && dataRowArray[5]!="")product.seller = dataRowArray[5];
+                if(product.timestamp==""  && dataRowArray[6]!="")product.timestamp = dataRowArray[6];
+                if(product.price==""      && dataRowArray[7]!="")product.price = dataRowArray[7];
 
+                if(Number(product.timestamp)<Number(dataRowArray[6])){
+                    product.timestamp = dataRowArray[6];
+                    product.price     = dataRowArray[7];
+                }
+                product.save(function (err) {
+                    if (err){console.error(err);}
+                    else addRowsToDb(dataArray,currIndex+1)
+                });
             }
         });
     }
 
 
+    function isFileRead(filename,callback){
+        fs.readFile(parsedListFileName, 'utf8', function(err, data) {
+            if (err) {
+                callback(err);
+            }
+            //console.log('OK: ' + filename);
+            //console.log("data split->",data.split("\n"));
+            var response = false;
+            for(var i=0;i<data.split("\n").length;i++){
+                if(data.split("\n")[i]==filename){
+                    response=true;
+                    break;
+                }
+            }
+            callback(null,response);
+        });
+    }
+    function fileIsRead(fileName){
+        fs.readFile(parsedListFileName, 'utf8', function(err, data) {
+            if (err) console.error(err);
+            //console.log(data);
+            var content= data+"\n"+fileName;
+            fs.writeFile(parsedListFileName, content, function(err) {
+                if(err) { return console.error(err);}
+                console.log("The file was saved!");
+            });
+        });
 
-    checkForFile(parsedListFileName,function(){
+    }
+
+
+    function parseFileAndPopulateDb(fileName){
+        //TODO:?check if filename exists in the "readFile"
+        isFileRead(fileName,function(err,response){
+            if(err)console.error("error in detecting if the file was read",err);
+            else if(response==true)
+                console.log("file "+fileName+" was already read");
+            else if(response==false){
+                console.log("reading file "+fileName+" and adding it to db");
+                //read file and add to db
+
+                var csv = require('fast-csv');
+
+                var stream = fs.createReadStream(dataLocation + fileName);
+
+                var csvStream = csv()
+                    .on("data", function(data){
+                        //console.log(data);
+                        addRowToDb(data);
+                    })
+                    .on("end", function(){
+                        console.log("done");
+                        fileIsRead(fileName);
+                    });
+
+                stream.pipe(csvStream);
+
+
+
+
+
+
+
+                //fs.readFile(dataLocation + fileName, 'utf8', function(err, data) {
+                //    if (err) {
+                //        console.error(err);
+                //    }
+                //    console.log('parsing file: ' + fileName);
+                //    //console.log(data);
+                //    var dataArray=data.split("\n");
+                //    var dataArrayLength=dataArray.length;
+                //    console.log("file length->",dataArrayLength);
+                //    /*for(var i=1;i<dataArrayLength;i++){
+                //        addRowToDb(dataArray[i]);
+                //
+                //    }*/
+                //
+                //    addRowsToDb(dataArray,0);
+                //    //TODO:add file to read list
+                //    setTimeout(function() {
+                //        fileIsRead(fileName);
+                //    },100);
+                //
+                //});
+            }
+        })
+    }
+
+
+
+    /*checkForFile(parsedListFileName,function(){
         console.log("initiated file parsedList.csv (if it didn't exists earlier) generated for storing which files have been parsed");
 
         //get list of all files which are present
@@ -131,15 +246,37 @@ module.exports = function (dataLocation) {
                 //get an array of files which have not been read
                 var filesUnread = arr_diff(filesRead,allFilesInFolder);
                 console.log("filesUnread->",filesUnread);
-                /*for(var i=0;i<filesUnread.length;i++)
-                    parseFileAndPopulateDb(filesUnread[i]);*/
-                parseFileAndPopulateDb("xaa.csv");
+                /!*for(var i=0;i<filesUnread.length;i++)
+                    parseFileAndPopulateDb(filesUnread[i]);*!/
+                //parseFileAndPopulateDb("xaa.csv");
 
             });
         });
-
         //for each file in the array
         //read that file and store it in the database
+    });*/
+
+
+    function startReading(dir){
+        var files = fs.readdirSync(dir);
+        for(var i = 0 ; i< files.length ; i ++ ){
+            if(files[i].match(/\.*csv$/)){
+                //parseFileAndPopulateDb(files[i]) ;
+                //console.log("reading file "+files[i]);
+            }
+        }
+
+    };
+
+
+    parseFileAndPopulateDb("xau.csv");
+
+
+
+    checkForFile(parsedListFileName,function(err) {
+        if(err)console.error("error in creating file");
+        console.log("initiated file parsedList.csv (if it didn't exists earlier) generated for storing which files have been parsed");
+        startReading(dataLocation);
     });
 
 };

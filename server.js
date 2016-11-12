@@ -46,7 +46,8 @@ app.set('view engine', 'ejs'); // set up ejs for templating
 
 // routes ======================================================================
 require('./app/parser/populateDb.js')(dataLocation);
-require('./app/utils/monitor.js')(dataLocation);
+//require('./app/utils/monitor.js')(dataLocation);
+require('./app/routes/queries.js')(app);
 /*require('./app/routes/flockEvents.js')(app, request);
 require('./app/routes/stocks.js')(app,mongoose);*/
 
@@ -62,6 +63,7 @@ app.get('/', function(req, res) {
 
 
 
+/*
 function startReading(dir){
     var files = fs.readdirSync(dir);
     for(var i = 0 ; i< files.length ; i ++ ){
@@ -74,4 +76,4 @@ function startReading(dir){
 
 
 
-startReading(dataLocation);
+startReading(dataLocation);*/

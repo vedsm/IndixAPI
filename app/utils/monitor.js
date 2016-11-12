@@ -24,7 +24,7 @@ watcher
     })
     .on('add', function(path) {
         console.log('File', path, 'has been ADDED');
-        if(!path.match(/\.*csv$/)){
+        if(path.match(/\.*csv$/)){
 
 	        fs.stat(path, function (err, stat) {
 
