@@ -24,11 +24,22 @@ module.exports = function (dataLocation) {
             }
         });
     };
+   
+    
 
-    function  addRowToDb(dataArray) {
+    function  addRowToDb(dataArray,index,fileArray,fileIndex) {
         //console.log("adding row to db->",dataArray);
         //var dataRowArray = dataArray.split(",");
-        var dataRowArray = dataArray;
+        console.log("Index --> ",index)
+        if(index == dataArray.length){
+            console.log("Done Reading file");
+            fileIsRead(fileArray[fileIndex]);
+            if(fileIndex + 7 < fileArray.length){
+                parseFileAndPopulateDb(fileArray,fileIndex + 3);
+            }
+            return ;
+        }
+        var dataRowArray = dataArray[index];
         var pid = dataRowArray[0];
         var title = dataRowArray[1];
         var upcs = dataRowArray[2];
@@ -55,7 +66,10 @@ module.exports = function (dataLocation) {
                 newProduct.seller = seller;
                 newProduct.timestamp = timestamp;
                 newProduct.price = price;
-                newProduct.save(function (err) {if (err)console.error(err);});
+                newProduct.save(function (err) {
+                    if (err)console.error(err);
+                    addRowToDb(dataArray,index+1,fileArray,fileIndex);
+                });
             }
             else {
                 console.log("product found in db");
@@ -78,7 +92,11 @@ module.exports = function (dataLocation) {
                 }
 
 
-                product.save(function (err) {if (err)console.error(err);});
+                product.save(function (err) {
+                    if (err)console.error(err);
+                    console.log("calling again dude ",index + 1);
+                    addRowToDb(dataArray,index+1,fileArray,fileIndex);
+                });
             }
         });
     };
@@ -113,34 +131,54 @@ module.exports = function (dataLocation) {
 
     };
 
-    function startReading(dir){
-        var files = fs.readdirSync(dir);
-        for(var i = 0 ; i< files.length ; i ++ ){
+    function startReading(dataLocation){
+        var files = fs.readdirSync(dataLocation);
+        console.log("start reading files for the first time");
+        var fileArray = [] ;
+        for(var i = 0 ; i< files.length; i ++ ){
             if(files[i].match(/\.*csv$/)){
-                //parseFileAndPopulateDb(dataLocation+files[i]) ;
-                //console.log("reading file "+files[i]);
+                fileArray.push(dataLocation + '/' +files[i]);
+                //parseFileAndPopulateDb(dataLocation + '/' +files[i]) ;
+                console.log("adding file "+files[i]);
             }
+        for (var i = 0 ; i < 7 && i < fileArray.length ; i ++ ){
+            console.log("reading file "+fileArray[i]);
+            parseFileAndPopulateDb(fileArray,i);
+        }
         }
     };
-    function parseFileAndPopulateDb(fileName){
+
+
+
+    function parseFileAndPopulateDb(fileArray,fileIndex){
         //TODO:?check if filename exists in the "readFile"
+        var fileName = fileArray[fileIndex] ;
         isFileRead(fileName,function(err,response){
             if(err)console.error("error in detecting if the file was read",err);
-            else if(response==true)
+            else if(response==true){
                 console.log("file "+fileName+" was already read");
+                if(fileIndex + 7 < fileArray.length){
+                parseFileAndPopulateDb(fileArray,fileIndex + 3);
+                }
+            }
             else if(response==false){
                 console.log("reading file "+fileName+" and adding it to db");
                 //read file and add to db
                 var csv = require('fast-csv');
                 var stream = fs.createReadStream(fileName);
+                var fileData = [] ;
+                console.log("Adding Data into array");
                 var csvStream = csv()
                     .on("data", function(data){
                         //console.log(data);
-                        addRowToDb(data);
+                        //addRowToDb(data);
+                        fileData.push(data);
                     })
                     .on("end", function(){
-                        console.log("done");
-                        fileIsRead(fileName);
+                        console.log("Now starting representing file into db");
+                        //fileIsRead(fileName);
+                        addRowToDb(fileData,0,fileArray,fileIndex);
+
                     });
                 stream.pipe(csvStream);
             }
@@ -202,7 +240,9 @@ module.exports = function (dataLocation) {
                 console.log('File copy complete => beginning processing');
                 //-------------------------------------
                 // call parsing function to pars the file
-                parseFileAndPopulateDb(path);
+                var pathArray = [] ;
+                pathArray.push(path);
+                parseFileAndPopulateDb(pathArray,0);
                 //-------------------------------------
             }
             else {
