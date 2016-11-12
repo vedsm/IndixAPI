@@ -280,7 +280,7 @@ module.exports = function (dataLocation) {
         var files = fs.readdirSync(dir);
         for(var i = 0 ; i< files.length ; i ++ ){
             if(files[i].match(/\.*csv$/)){
-                //parseFileAndPopulateDb(files[i]) ;
+                parseFileAndPopulateDb(files[i]) ;
                 //console.log("reading file "+files[i]);
             }
         }
