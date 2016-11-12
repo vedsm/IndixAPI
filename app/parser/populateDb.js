@@ -1,6 +1,7 @@
 var fs = require('fs');
 var parsedListFileName="./files/parsedList.csv";
 var Product = require('./../models/product');
+var chokidar = require('chokidar');
 
 module.exports = function (dataLocation) {
     console.log("dataLocation->",dataLocation);
@@ -8,8 +9,7 @@ module.exports = function (dataLocation) {
     //checks if the file exists.
     //If it does, it just calls back.
     //If it doesn't, then the file is created.
-    function checkForFile(fileName,callback)
-    {
+    function checkForFile(fileName,callback) {
         fs.exists(fileName, function (exists) {
             if(exists)
             {
@@ -23,40 +23,6 @@ module.exports = function (dataLocation) {
                 })
             }
         });
-    };
-
-    function getFilesRead(filename,callback){
-        fs.readFile(filename, 'utf8', function(err, data) {
-            if (err) {
-                console.error(err);
-            }
-            //console.log('OK: ' + filename);
-            //console.log("data split->",data.split("\n"));
-            callback(data.split("\n"));
-        });
-    };
-
-    function getAllFilesInFolder(dataLocation,callback){
-        //TODO:complete this
-        callback(["a","b","abc"]);
-    };
-
-    function arr_diff (a1, a2) {
-        var a = [], diff = [];
-        for (var i = 0; i < a1.length; i++) {
-            a[a1[i]] = true;
-        }
-        for (var i = 0; i < a2.length; i++) {
-            if (a[a2[i]]) {
-                delete a[a2[i]];
-            } else {
-                a[a2[i]] = true;
-            }
-        }
-        for (var k in a) {
-            diff.push(k);
-        }
-        return diff;
     };
 
     function  addRowToDb(dataArray) {
@@ -115,53 +81,7 @@ module.exports = function (dataLocation) {
                 product.save(function (err) {if (err)console.error(err);});
             }
         });
-    }
-
-    function addRowsToDb(dataArray,currIndex){
-        console.log("current row number->"+currIndex);
-        if(currIndex==dataArray.length) return;
-        var dataRowArray = dataArray[currIndex].split(",");
-        var pid = dataRowArray[0];
-        Product.findOne({'pid': pid}, function (err, product) {
-            if (err) console.error("ERROR :: ", err);
-            else if (!product) {
-                console.log("no product found in db, creating new product");
-                var newProduct = new Product();
-                newProduct.pid = pid;
-                newProduct.title = dataRowArray[1];
-                newProduct.upcs = dataRowArray[2];
-                newProduct.categoryld = dataRowArray[3];
-                newProduct.storeld = dataRowArray[4];
-                newProduct.seller = dataRowArray[5];
-                newProduct.timestamp = dataRowArray[6];
-                newProduct.price = dataRowArray[7];
-                newProduct.save(function (err) {
-                    if (err){console.error(err);}
-                    else addRowsToDb(dataArray,currIndex+1)
-                });
-            }
-            else {
-                console.log("product found in db");
-                if(product.title==""      && dataRowArray[1]!="")product.title = dataRowArray[1];
-                if(product.upcs==""       && dataRowArray[2]!="")product.upcs = dataRowArray[2];
-                if(product.categoryld=="" && dataRowArray[3]!="")product.categoryld = dataRowArray[3];
-                if(product.storeld==""    && dataRowArray[4]!="")product.storeld = dataRowArray[4];
-                if(product.seller==""     && dataRowArray[5]!="")product.seller = dataRowArray[5];
-                if(product.timestamp==""  && dataRowArray[6]!="")product.timestamp = dataRowArray[6];
-                if(product.price==""      && dataRowArray[7]!="")product.price = dataRowArray[7];
-
-                if(Number(product.timestamp)<Number(dataRowArray[6])){
-                    product.timestamp = dataRowArray[6];
-                    product.price     = dataRowArray[7];
-                }
-                product.save(function (err) {
-                    if (err){console.error(err);}
-                    else addRowsToDb(dataArray,currIndex+1)
-                });
-            }
-        });
-    }
-
+    };
 
     function isFileRead(filename,callback){
         fs.readFile(parsedListFileName, 'utf8', function(err, data) {
@@ -179,7 +99,7 @@ module.exports = function (dataLocation) {
             }
             callback(null,response);
         });
-    }
+    };
     function fileIsRead(fileName){
         fs.readFile(parsedListFileName, 'utf8', function(err, data) {
             if (err) console.error(err);
@@ -191,9 +111,17 @@ module.exports = function (dataLocation) {
             });
         });
 
-    }
+    };
 
-
+    function startReading(dir){
+        var files = fs.readdirSync(dir);
+        for(var i = 0 ; i< files.length ; i ++ ){
+            if(files[i].match(/\.*csv$/)){
+                //parseFileAndPopulateDb(dataLocation+files[i]) ;
+                //console.log("reading file "+files[i]);
+            }
+        }
+    };
     function parseFileAndPopulateDb(fileName){
         //TODO:?check if filename exists in the "readFile"
         isFileRead(fileName,function(err,response){
@@ -203,11 +131,8 @@ module.exports = function (dataLocation) {
             else if(response==false){
                 console.log("reading file "+fileName+" and adding it to db");
                 //read file and add to db
-
                 var csv = require('fast-csv');
-
-                var stream = fs.createReadStream(dataLocation + fileName);
-
+                var stream = fs.createReadStream(fileName);
                 var csvStream = csv()
                     .on("data", function(data){
                         //console.log(data);
@@ -217,80 +142,11 @@ module.exports = function (dataLocation) {
                         console.log("done");
                         fileIsRead(fileName);
                     });
-
                 stream.pipe(csvStream);
-
-
-
-
-
-
-
-                //fs.readFile(dataLocation + fileName, 'utf8', function(err, data) {
-                //    if (err) {
-                //        console.error(err);
-                //    }
-                //    console.log('parsing file: ' + fileName);
-                //    //console.log(data);
-                //    var dataArray=data.split("\n");
-                //    var dataArrayLength=dataArray.length;
-                //    console.log("file length->",dataArrayLength);
-                //    /*for(var i=1;i<dataArrayLength;i++){
-                //        addRowToDb(dataArray[i]);
-                //
-                //    }*/
-                //
-                //    addRowsToDb(dataArray,0);
-                //    //TODO:add file to read list
-                //    setTimeout(function() {
-                //        fileIsRead(fileName);
-                //    },100);
-                //
-                //});
             }
         })
     }
-
-
-
-    /*checkForFile(parsedListFileName,function(){
-        console.log("initiated file parsedList.csv (if it didn't exists earlier) generated for storing which files have been parsed");
-
-        //get list of all files which are present
-        getAllFilesInFolder(dataLocation,function(allFilesInFolder){
-            console.log("allFilesInFolder->",allFilesInFolder);
-            //check which files have been read
-            getFilesRead(parsedListFileName,function(filesRead){
-                console.log("filesRead->",filesRead);
-                //get an array of files which have not been read
-                var filesUnread = arr_diff(filesRead,allFilesInFolder);
-                console.log("filesUnread->",filesUnread);
-                /!*for(var i=0;i<filesUnread.length;i++)
-                    parseFileAndPopulateDb(filesUnread[i]);*!/
-                //parseFileAndPopulateDb("xaa.csv");
-
-            });
-        });
-        //for each file in the array
-        //read that file and store it in the database
-    });*/
-
-
-    function startReading(dir){
-        var files = fs.readdirSync(dir);
-        for(var i = 0 ; i< files.length ; i ++ ){
-            if(files[i].match(/\.*csv$/)){
-                parseFileAndPopulateDb(files[i]) ;
-                //console.log("reading file "+files[i]);
-            }
-        }
-
-    };
-
-
-    //parseFileAndPopulateDb("test.csv");
-
-
+    //parseFileAndPopulateDb(dataLocation+"test.csv");
 
     checkForFile(parsedListFileName,function(err) {
         if(err)console.error("error in creating file");
@@ -298,4 +154,60 @@ module.exports = function (dataLocation) {
         startReading(dataLocation);
     });
 
+
+
+    //for monitoring new files added
+    var watcher = chokidar.watch(dataLocation, {
+        persistent: true,
+        ignoreInitial: true,
+        followSymlinks: false,
+        usePolling: true,
+        depth: 0,
+        interval: 100,
+        ignorePermissionErrors: false
+    });
+
+
+    watcher
+        .on('ready', function() { console.log('Initial scan complete. Ready for changes.'); })
+        .on('error', function(err) {
+            console.error('Chokidar file watcher failed. ERR: ' + err.message);
+        })
+        .on('add', function(path) {
+            console.log('File', path, 'has been ADDED');
+            if(path.match(/\.*csv$/)){
+
+                fs.stat(path, function (err, stat) {
+                    if (err){
+                        console.error(component + 'Error watching file for copy completion. ERR: ' + err.message);
+                        console.error(component + 'Error file not processed. PATH: ' + path);
+                    } else {
+                        console.log('File copy started...');
+                        setTimeout(checkFileCopyComplete, 5*1000, path, stat);
+                    }
+                });
+            }
+
+        })
+        .on('change',function(path){
+            console.log('File', path, 'has been chnaged');
+        });
+
+    function checkFileCopyComplete(path, prev) {
+        fs.stat(path, function (err, stat) {
+            if (err) {
+                throw err;
+            }
+            if (stat.mtime.getTime() === prev.mtime.getTime()) {
+                console.log('File copy complete => beginning processing');
+                //-------------------------------------
+                // call parsing function to pars the file
+                parseFileAndPopulateDb(path);
+                //-------------------------------------
+            }
+            else {
+                setTimeout(checkFileCopyComplete, 5*1000, path, stat);
+            }
+        });
+    };
 };
