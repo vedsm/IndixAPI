@@ -8,7 +8,7 @@ var productSchema = mongoose.Schema({
     categoryld:String,
     storeld:String,
     seller:String,
-    timestamp:String,
-    price:String
+    timestamp:Number,
+    price:Number
 });
 module.exports = mongoose.model('Product', productSchema);

@@ -64,52 +64,50 @@ module.exports = function (dataLocation) {
         //var dataRowArray = dataArray.split(",");
         var dataRowArray = dataArray;
         var pid = dataRowArray[0];
+        var title = dataRowArray[1];
+        var upcs = dataRowArray[2];
+        var categoryld = dataRowArray[3];
+        var storeld = dataRowArray[4];
         var seller = dataRowArray[5] ;
+        var timestamp = -1;
+        if(!isNaN(dataRowArray[6]))
+            timestamp=Number(dataRowArray[6]);
+        var price = -1;
+        if(!isNaN(dataRowArray[7]))
+            price=Number(dataRowArray[7]);
+
         Product.findOne({$and:[{'pid': pid},{'seller':seller}]}, function (err, product) {
             if (err) console.error("ERROR :: ", err);
             else if (!product) {
                 console.log("no product found in db, creating new product");
                 var newProduct = new Product();
                 newProduct.pid = pid;
-                newProduct.title = dataRowArray[1];
-                newProduct.upcs = dataRowArray[2];
-                newProduct.categoryld = dataRowArray[3];
-                newProduct.storeld = dataRowArray[4];
-                newProduct.seller = dataRowArray[5];
-                if(dataRowArray[6] == ""){
-                    newProduct.timestamp = -1
-                }
-                else{
-                newProduct.timestamp = Number(dataRowArray[6]) ; 
-                }
-                if(dataRowArray[7] == ""){
-                    newProduct.price = -1
-                }
-                else{
-                newProduct.price = Number(dataRowArray[7]); 
-                }
-            
+                newProduct.title = title;
+                newProduct.upcs = upcs;
+                newProduct.categoryld = categoryld;
+                newProduct.storeld = storeld;
+                newProduct.seller = seller;
+                newProduct.timestamp = timestamp;
+                newProduct.price = price;
                 newProduct.save(function (err) {if (err)console.error(err);});
             }
             else {
                 console.log("product found in db");
-                console.log("If timestamp is greater ");
-                if(product.timestamp < Number(dataArray[6])){
-                    if(dataRowArray[1] != ""){
-                        product.title = dataRowArray[1];
-                    }
-                    if(dataRowArray[2]!="")product.upcs = dataRowArray[2];
-                    if(dataRowArray[3]!="")product.categoryld = dataRowArray[3];
-                    if(dataRowArray[4]!="")product.storeld = dataRowArray[4];
-                    if( dataRowArray[6]!="")product.timestamp = Number(dataRowArray[6]);
-                    if(dataRowArray[7]!="")product.price = Number(dataRowArray[7]);
+                if(product.timestamp < timestamp){
+                    console.log("If timestamp is greater ");
+                    if(title != "")product.title = title;
+                    if(upcs!="")product.upcs = upcs;
+                    if(categoryld!="")product.categoryld = categoryld;
+                    if(storeld!="")product.storeld = storeld;
+                    if(timestamp!=-1)product.timestamp = timestamp;
+                    if(price!=-1)product.price = price;
                 }
                 else{
                     console.log("timestamp is less than the exisiting timestamp");
-                    if(product.title==""      && dataRowArray[1]!="")product.title = dataRowArray[1];
-                    if(product.upcs==""       && dataRowArray[2]!="")product.upcs = dataRowArray[2];
-                    if(product.categoryld=="" && dataRowArray[3]!="")product.categoryld = dataRowArray[3];
-                    if(product.storeld==""    && dataRowArray[4]!="")product.storeld = dataRowArray[4] ;
+                    if(product.title==""      && title!="")product.title = title;
+                    if(product.upcs==""       && upcs!="")product.upcs = upcs;
+                    if(product.categoryld=="" && categoryld!="")product.categoryld = categoryld;
+                    if(product.storeld==""    && storeld!="")product.storeld = storeld;
 
                 }
 
@@ -290,7 +288,7 @@ module.exports = function (dataLocation) {
     };
 
 
-    parseFileAndPopulateDb("xau.csv");
+    //parseFileAndPopulateDb("test.csv");
 
 
 
