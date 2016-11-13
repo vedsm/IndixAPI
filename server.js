@@ -46,10 +46,8 @@ app.set('view engine', 'ejs'); // set up ejs for templating
 
 // routes ======================================================================
 require('./app/parser/populateDb.js')(dataLocation);
-//require('./app/utils/monitor.js')(dataLocation);
 require('./app/routes/queries.js')(app);
-/*require('./app/routes/flockEvents.js')(app, request);
-require('./app/routes/stocks.js')(app,mongoose);*/
+require('./app/routes/pages.js')(app);
 
 // launch ======================================================================
 app.listen(port);
@@ -59,21 +57,3 @@ app.get('/', function(req, res) {
     console.log('Success');
     res.json({success: "true", message: "Yayy"});
 });
-
-
-
-
-/*
-function startReading(dir){
-    var files = fs.readdirSync(dir);
-    for(var i = 0 ; i< files.length ; i ++ ){
-        if(!files[i].match(/\.*csv$/)){
-            parseFileAndPopulateDb(files[i]) ;
-        }
-    }
-
-};
-
-
-
-startReading(dataLocation);*/

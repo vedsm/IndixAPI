@@ -85,10 +85,10 @@ module.exports = function (dataLocation) {
                     }
                     else{
                         //console.log("timestamp is less than the exisiting timestamp");     //LOG
-                        if(product.title==""      && title!="")product.title = title;
-                        if(product.upcs==""       && upcs!="")product.upcs = upcs;
-                        if(product.categoryld=="" && categoryld!="")product.categoryld = categoryld;
-                        if(product.storeld==""    && storeld!="")product.storeld = storeld;
+                        if(product.title==""      )product.title = title;
+                        if(product.upcs==""       )product.upcs = upcs;
+                        if(product.categoryld=="" )product.categoryld = categoryld;
+                        if(product.storeld==""    )product.storeld = storeld;
 
                     }
 
@@ -211,7 +211,8 @@ module.exports = function (dataLocation) {
                 filesArray.push(dataLocation+files[i]);
             }
         }
-        console.log("reading files",filesArray);
+        //TODO!!!!!!!!!!!!!!!!!!!!!!
+        /*console.log("reading files",filesArray);
         var batchSize=7;
         for(var i=0;i<filesArray.length/batchSize;i++){
             parseFilesAndPopulateDb(filesArray.slice(i*batchSize,i*batchSize+batchSize),0,function(err){
@@ -220,7 +221,7 @@ module.exports = function (dataLocation) {
                     console.log("read all files successfully");
                 }
             });
-        }
+        }*/
     };
 
     //recursive function which takes an array of files and reads them in sync

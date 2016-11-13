@@ -3,6 +3,12 @@ var Product = require('./../models/product');
 module.exports = function (app) {
     app.get('/upc/:inputUpc', function (req, res) {
         var inputUpc = req.params.inputUpc;
+        //for pagination
+        /*var options = {
+            "limit": 20,
+            "skip": 10,
+            "sort": "title"
+        }*/
         Product.find({upcs:inputUpc},function(err,products){
             if(err)return res.json({success:false,message:"error "+err});
             else{
@@ -36,12 +42,16 @@ module.exports = function (app) {
         var minPrice = Number(req.query.minPrice);
         var maxPrice = Number(req.query.maxPrice);
         console.log("Token requested ",token);
-        Product.find(function(err,allProducts){
-            //console.log("all products",JSON.stringify(allProducts));
-        })
 
-        //
-        Product.find({$and:[{title: {$regex:'.*'+token+'.*'}},{price:{$lt:maxPrice}},{price:{$gt:minPrice}}]},function(err,products){
+        var tokens = token.split(" ");
+        var regexPattern = '.*';
+        for(var i = 0;i < tokens.length;i++){
+            regexPattern = regexPattern  + tokens[i] + '.*' ;
+
+        }
+
+
+        Product.find({$and:[{title: {$regex:regexPattern, $options: '-i'}},{price:{$lt:maxPrice}},{price:{$gt:minPrice}}]},function(err,products){
             if(err)return res.json({success:false,message:"error "+err});
             else{
                 res.json({success:true,message:"getting data for token->"+token,products:products});
