@@ -201,18 +201,21 @@ module.exports = function (dataLocation) {
         var filesArray=[];
         for(var i = 0 ; i< files.length ; i ++ ){
             if(files[i].match(/\.*csv$/)){
-                //parseFileAndPopulateDb(dataLocation+files[i]);
+                //parseFileAndPopulateDb(dataLocation+files[i]) ;
                 //console.log("reading file "+files[i]);
                 filesArray.push(dataLocation+files[i]);
             }
         }
         console.log("reading files",filesArray);
-        parseFilesAndPopulateDb(filesArray,0,function(err){
-            if(err)console.error("error in reading files",err);
-            else{
-                console.log("read all files successfully");
-            }
-        });
+        var batchSize=7;
+        for(var i=0;i<filesArray.length/batchSize;i++){
+            parseFilesAndPopulateDb(filesArray.slice(i*batchSize,i*batchSize+batchSize),0,function(err){
+                if(err)console.error("error in reading files",err);
+                else{
+                    console.log("read all files successfully");
+                }
+            });
+        }
     };
 
     function parseFilesAndPopulateDb(filesArray,fileIndex,callback){
@@ -268,9 +271,21 @@ module.exports = function (dataLocation) {
         }
     };
 
-    //TODO:TESTING
-    /*console.log("reading a file");
-    parseFilesAndPopulateDb([dataLocation+"test.csv",dataLocation+"test (copy).csv",dataLocation+"xaa.csv"],0,function(err){
+    /*//TODO:TESTING
+    console.log("reading a file");
+    parseFilesAndPopulateDb([dataLocation+"xai.csv"],0,function(err){
+        if(err)console.error("error in reading file"+dataLocation+"xaa.csv",err);
+        else{
+            console.log("file:"+dataLocation+"xaa.csv read successfully");
+        }
+    });
+    parseFilesAndPopulateDb([dataLocation+"xaw.csv"],0,function(err){
+        if(err)console.error("error in reading file"+dataLocation+"xaa.csv",err);
+        else{
+            console.log("file:"+dataLocation+"xaa.csv read successfully");
+        }
+    });
+    parseFilesAndPopulateDb([dataLocation+"xaq.csv"],0,function(err){
         if(err)console.error("error in reading file"+dataLocation+"xaa.csv",err);
         else{
             console.log("file:"+dataLocation+"xaa.csv read successfully");
@@ -288,7 +303,7 @@ module.exports = function (dataLocation) {
 
 
 
-    function parseFileAndPopulateDb(fileName){
+    /*function parseFileAndPopulateDb(fileName){
         //check if filename exists in the "readFile"
         isFileRead(fileName,function(err,response){
             if(err)console.error("error in detecting if the file was read",err);
@@ -311,6 +326,7 @@ module.exports = function (dataLocation) {
                         addRowsToDb(dataArray,0,function(err){
                             if(err){console.error("error in adding all rows of a file to db",err);}
                             else{
+                                console.log("added file to db");
                                 fileIsRead(fileName);
                                 console.log("read file successfully");
                             }
@@ -319,7 +335,7 @@ module.exports = function (dataLocation) {
                 stream.pipe(csvStream);
             }
         })
-    }
+    }*/
     //parseFileAndPopulateDb(dataLocation+"xaa.csv");
 
     checkForFile(parsedListFileName,function(err) {
