@@ -25,7 +25,88 @@ module.exports = function (dataLocation) {
         });
     };
 
-    function  addRowToDb(dataArray) {
+    function addRowsToDb(dataArray,rowIndex,callback){
+        if(rowIndex>=dataArray.length){
+            callback(null);
+        }
+        else{
+            //console.log("adding row to db->",dataArray);
+            //var dataRowArray = dataArray.split(",");
+            console.log("reading row number->",rowIndex);           //LOG
+            //console.log("which has value",dataArray[rowIndex]);
+            var dataRowArray = dataArray[rowIndex];
+            var pid = dataRowArray[0];
+            var title = dataRowArray[1];
+            var upcs = dataRowArray[2];
+            var categoryld = dataRowArray[3];
+            var storeld = dataRowArray[4];
+            var seller = dataRowArray[5] ;
+            var timestamp = -1;
+            if(!isNaN(dataRowArray[6]))
+                timestamp=Number(dataRowArray[6]);
+            var price = -1;
+            if(!isNaN(dataRowArray[7]))
+                price=Number(dataRowArray[7]);
+
+            Product.findOne({$and:[{'pid': pid},{'seller':seller}]}, function (err, product) {
+                if (err) console.error("ERROR :: ", err);
+                else if (!product) {
+                    //console.log("no product found in db, creating new product");    //LOG
+                    var newProduct = new Product();
+                    newProduct.pid = pid;
+                    newProduct.title = title;
+                    newProduct.upcs = upcs;
+                    newProduct.categoryld = categoryld;
+                    newProduct.storeld = storeld;
+                    newProduct.seller = seller;
+                    newProduct.timestamp = timestamp;
+                    newProduct.price = price;
+                    newProduct.save(function (err) {
+                        if (err){callback(err);console.error(err);}
+                        else{
+                            addRowsToDb(dataArray,rowIndex+1,function(err){
+                                if(err)callback(err);
+                                else callback(null);
+                            })
+                        }
+                    });
+                }
+                else {
+                    //console.log("product found in db");            //LOG
+                    if(product.timestamp < timestamp){
+                        //console.log("If timestamp is greater ");     //LOG
+                        if(title != "")product.title = title;
+                        if(upcs!="")product.upcs = upcs;
+                        if(categoryld!="")product.categoryld = categoryld;
+                        if(storeld!="")product.storeld = storeld;
+                        if(timestamp!=-1)product.timestamp = timestamp;
+                        if(price!=-1)product.price = price;
+                    }
+                    else{
+                        //console.log("timestamp is less than the exisiting timestamp");     //LOG
+                        if(product.title==""      && title!="")product.title = title;
+                        if(product.upcs==""       && upcs!="")product.upcs = upcs;
+                        if(product.categoryld=="" && categoryld!="")product.categoryld = categoryld;
+                        if(product.storeld==""    && storeld!="")product.storeld = storeld;
+
+                    }
+
+
+                    product.save(function (err) {
+                        if(err)callback(err);
+                        else{
+                            addRowsToDb(dataArray,rowIndex+1,function(err){
+                                if(err)callback(err);
+                                else callback(null);
+                            })
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    /*function  addRowToDb(dataArray) {
         //console.log("adding row to db->",dataArray);
         //var dataRowArray = dataArray.split(",");
         var dataRowArray = dataArray;
@@ -45,7 +126,7 @@ module.exports = function (dataLocation) {
         Product.findOne({$and:[{'pid': pid},{'seller':seller}]}, function (err, product) {
             if (err) console.error("ERROR :: ", err);
             else if (!product) {
-                console.log("no product found in db, creating new product");
+                //console.log("no product found in db, creating new product");
                 var newProduct = new Product();
                 newProduct.pid = pid;
                 newProduct.title = title;
@@ -58,9 +139,9 @@ module.exports = function (dataLocation) {
                 newProduct.save(function (err) {if (err)console.error(err);});
             }
             else {
-                console.log("product found in db");
+                //console.log("product found in db");
                 if(product.timestamp < timestamp){
-                    console.log("If timestamp is greater ");
+                    //console.log("If timestamp is greater ");
                     if(title != "")product.title = title;
                     if(upcs!="")product.upcs = upcs;
                     if(categoryld!="")product.categoryld = categoryld;
@@ -69,7 +150,7 @@ module.exports = function (dataLocation) {
                     if(price!=-1)product.price = price;
                 }
                 else{
-                    console.log("timestamp is less than the exisiting timestamp");
+                    //console.log("timestamp is less than the exisiting timestamp");
                     if(product.title==""      && title!="")product.title = title;
                     if(product.upcs==""       && upcs!="")product.upcs = upcs;
                     if(product.categoryld=="" && categoryld!="")product.categoryld = categoryld;
@@ -81,23 +162,25 @@ module.exports = function (dataLocation) {
                 product.save(function (err) {if (err)console.error(err);});
             }
         });
-    };
+    };*/
 
     function isFileRead(filename,callback){
         fs.readFile(parsedListFileName, 'utf8', function(err, data) {
             if (err) {
                 callback(err);
             }
-            //console.log('OK: ' + filename);
-            //console.log("data split->",data.split("\n"));
-            var response = false;
-            for(var i=0;i<data.split("\n").length;i++){
-                if(data.split("\n")[i]==filename){
-                    response=true;
-                    break;
+            else {
+                //console.log('OK: ' + filename);
+                //console.log("data split->",data.split("\n"));
+                var response = false;
+                for (var i = 0; i < data.split("\n").length; i++) {
+                    if (data.split("\n")[i] == filename) {
+                        response = true;
+                        break;
+                    }
                 }
+                callback(null, response);
             }
-            callback(null,response);
         });
     };
     function fileIsRead(fileName){
@@ -115,15 +198,98 @@ module.exports = function (dataLocation) {
 
     function startReading(dir){
         var files = fs.readdirSync(dir);
+        var filesArray=[];
         for(var i = 0 ; i< files.length ; i ++ ){
             if(files[i].match(/\.*csv$/)){
-                //parseFileAndPopulateDb(dataLocation+files[i]) ;
+                //parseFileAndPopulateDb(dataLocation+files[i]);
                 //console.log("reading file "+files[i]);
+                filesArray.push(dataLocation+files[i]);
             }
         }
+        console.log("reading files",filesArray);
+        parseFilesAndPopulateDb(filesArray,0,function(err){
+            if(err)console.error("error in reading files",err);
+            else{
+                console.log("read all files successfully");
+            }
+        });
     };
+
+    function parseFilesAndPopulateDb(filesArray,fileIndex,callback){
+        if(fileIndex>=filesArray.length){
+            callback(null);
+        }
+        else{
+            var currFile=filesArray[fileIndex];
+            isFileRead(currFile,function(err,response){
+                if(err){callback(err);console.error("error in detecting if the file was read",err);}
+                else if(response==true) {
+                    console.log("file " + currFile + " was already read");
+                    parseFilesAndPopulateDb(filesArray,fileIndex+1,function(err){
+                        if(err){callback(err);console.error("error in reading files",err);}
+                        else{
+                            console.log("read file successfully");
+                            callback(null);
+                        }
+                    });
+                }
+                else if(response==false){
+                    console.log("reading file "+currFile+" and adding it to db");
+                    //read file and add to db
+                    var csv = require('fast-csv');
+                    var stream = fs.createReadStream(filesArray[fileIndex]);
+                    var dataArray=[];
+                    var csvStream = csv()
+                        .on("data", function(data){
+                            //console.log(data);
+                            dataArray.push(data);
+                            //addRowToDb(data);
+                        })
+                        .on("end", function(){
+                            console.log("done");
+                            addRowsToDb(dataArray,0,function(err){
+                                if(err){callback(err);console.error("error in adding all rows of a file to db",err);}
+                                else{
+                                    console.log("added file to db");
+                                    fileIsRead(currFile);
+                                    parseFilesAndPopulateDb(filesArray,fileIndex+1,function(err){
+                                        if(err){callback(err);console.error("error in reading files",err);}
+                                        else{
+                                            console.log("read file successfully");
+                                            callback(null);
+                                        }
+                                    });
+                                }
+                            });
+                        });
+                    stream.pipe(csvStream);
+                }
+            })
+        }
+    };
+
+    //TODO:TESTING
+    /*console.log("reading a file");
+    parseFilesAndPopulateDb([dataLocation+"test.csv",dataLocation+"test (copy).csv",dataLocation+"xaa.csv"],0,function(err){
+        if(err)console.error("error in reading file"+dataLocation+"xaa.csv",err);
+        else{
+            console.log("file:"+dataLocation+"xaa.csv read successfully");
+        }
+    });*/
+
+    //TODO:benchmarking
+    /*
+     8000 @ 8:40
+    16000 @ 8:45
+
+    1600 rows per minute
+
+     */
+
+
+
     function parseFileAndPopulateDb(fileName){
-        //TODO:?check if filename exists in the "readFile"
+        //check if filename exists in the "readFile"
         isFileRead(fileName,function(err,response){
             if(err)console.error("error in detecting if the file was read",err);
             else if(response==true)
@@ -133,20 +299,28 @@ module.exports = function (dataLocation) {
                 //read file and add to db
                 var csv = require('fast-csv');
                 var stream = fs.createReadStream(fileName);
+                var dataArray=[];
                 var csvStream = csv()
                     .on("data", function(data){
                         //console.log(data);
-                        addRowToDb(data);
+                        dataArray.push(data);
+                        //addRowToDb(data);
                     })
                     .on("end", function(){
                         console.log("done");
-                        fileIsRead(fileName);
+                        addRowsToDb(dataArray,0,function(err){
+                            if(err){console.error("error in adding all rows of a file to db",err);}
+                            else{
+                                fileIsRead(fileName);
+                                console.log("read file successfully");
+                            }
+                        });
                     });
                 stream.pipe(csvStream);
             }
         })
     }
-    //parseFileAndPopulateDb(dataLocation+"test.csv");
+    //parseFileAndPopulateDb(dataLocation+"xaa.csv");
 
     checkForFile(parsedListFileName,function(err) {
         if(err)console.error("error in creating file");
@@ -202,7 +376,13 @@ module.exports = function (dataLocation) {
                 console.log('File copy complete => beginning processing');
                 //-------------------------------------
                 // call parsing function to pars the file
-                parseFileAndPopulateDb(path);
+                //parseFileAndPopulateDb(path);
+                parseFilesAndPopulateDb([path],0,function(err){
+                    if(err)console.error("error in reading file "+path,err);
+                    else{
+                        console.log("file:"+path+" read successfully");
+                    }
+                });
                 //-------------------------------------
             }
             else {
@@ -210,4 +390,8 @@ module.exports = function (dataLocation) {
             }
         });
     };
+
+
+
+
 };
