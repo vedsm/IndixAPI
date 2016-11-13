@@ -23,7 +23,7 @@ module.exports = function (app) {
 
     app.get('/category/:inputCategory', function (req, res) {
         var inputCategory = req.params.inputCategory;
-        Product.find({category:inputCategory},function(err,products){
+        Product.find({categoryld:inputCategory},function(err,products){
             if(err)return res.json({success:false,message:"error "+err});
             else{
                 res.json({success:true,message:"getting data for inputCategory->"+inputCategory,products:products})

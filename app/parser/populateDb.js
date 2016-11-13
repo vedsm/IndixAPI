@@ -25,6 +25,7 @@ module.exports = function (dataLocation) {
         });
     };
 
+    //recursive function to add rows to mongod
     function addRowsToDb(dataArray,rowIndex,callback){
         if(rowIndex>=dataArray.length){
             callback(null);
@@ -164,6 +165,7 @@ module.exports = function (dataLocation) {
         });
     };*/
 
+    //to check if the given file is already read by comparing it with list of files in parsedListFileName
     function isFileRead(filename,callback){
         fs.readFile(parsedListFileName, 'utf8', function(err, data) {
             if (err) {
@@ -183,6 +185,8 @@ module.exports = function (dataLocation) {
             }
         });
     };
+
+    //adds the file to parsedListFileName when parsing of it is finished
     function fileIsRead(fileName){
         fs.readFile(parsedListFileName, 'utf8', function(err, data) {
             if (err) console.error(err);
@@ -196,6 +200,7 @@ module.exports = function (dataLocation) {
 
     };
 
+    //reads all files in the folder
     function startReading(dir){
         var files = fs.readdirSync(dir);
         var filesArray=[];
@@ -218,6 +223,7 @@ module.exports = function (dataLocation) {
         }
     };
 
+    //recursive function which takes an array of files and reads them in sync
     function parseFilesAndPopulateDb(filesArray,fileIndex,callback){
         if(fileIndex>=filesArray.length){
             callback(null);
@@ -291,15 +297,6 @@ module.exports = function (dataLocation) {
             console.log("file:"+dataLocation+"xaa.csv read successfully");
         }
     });*/
-
-    //TODO:benchmarking
-    /*
-     8000 @ 8:40
-    16000 @ 8:45
-
-    1600 rows per minute
-
-     */
 
 
 
